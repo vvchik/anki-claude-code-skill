@@ -1,12 +1,14 @@
 ---
 name: anki
 description: >
-  Create, browse, edit, and manage Anki flashcards and decks via AnkiConnect.
-  Use when the user wants to study material, create flashcards, review existing
-  decks, or manage their Anki collection. Applies evidence-based flashcard
-  science automatically.
+  Create, browse, edit, and manage Anki flashcards and decks via AnkiConnect,
+  or build an importable .apkg deck file when Anki is not running. Use whenever
+  the user mentions Anki, flashcards, spaced repetition, cloze cards, or .apkg
+  files, or wants to turn notes, docs, or a conversation into study cards, even
+  if they do not name Anki. Also use to review, edit, tag, or reorganize
+  existing decks. Applies evidence-based flashcard science automatically.
 argument-hint: "[text, file path, or deck name]"
-allowed-tools: Bash(curl *) Read
+allowed-tools: Bash(curl *) Bash(uv run *) Read Write
 ---
 
 # Anki Skill
@@ -37,7 +39,7 @@ Before any operation, verify AnkiConnect is reachable:
 curl -s localhost:8765 -X POST -d '{"action":"version","version":6}'
 ```
 
-If this fails, tell the user: "Anki desktop needs to be open with AnkiConnect installed (add-on code 2055492159). Start Anki and try again."
+If this fails, tell the user: "Anki desktop needs to be open with AnkiConnect installed (add-on code 2055492159)." Then offer two choices: start Anki and retry, or build the cards as an `.apkg` file (see [.apkg Fallback](#apkg-fallback)). The fallback also applies when the skill runs in a sandbox that cannot reach `localhost`.
 
 ## Entry Points
 
@@ -142,11 +144,38 @@ Read `reference/card-templates.md` for media formatting details.
   - Audio: `[sound:filename.mp3]`
 - Media filenames must be unique across the collection
 
+### .apkg Fallback
+
+Use this path when the health check fails or the user asks for a file. The card creation workflow stays the same up to step 8. Only the push step changes. AnkiConnect calls stay curl-only. Python runs only here, through `uv`, so nothing is installed globally.
+
+1. Write the approved cards to a JSON spec. Relative `media` paths resolve against the spec's folder:
+   ```json
+   {
+     "deck": "Python::Data Structures",
+     "notes": [
+       {"model": "Basic", "fields": {"Front": "...", "Back": "..."}, "tags": ["python"]},
+       {"model": "Basic (and reversed card)", "fields": {"Front": "...", "Back": "..."}, "tags": []},
+       {"model": "Cloze", "fields": {"Text": "{{c1::...}}", "Extra": "..."}, "tags": []}
+     ],
+     "media": ["python-bst-diagram.png"]
+   }
+   ```
+2. Build and validate the package. The script is in `scripts/` next to this file:
+   ```bash
+   uv run <skill-dir>/scripts/build_apkg.py cards.json cards.apkg
+   ```
+   The script stops with an error if a field references an `<img src>` or `[sound:]` file that is not in `media`. It also stops on media filenames with characters other than ASCII letters, digits, `.`, `_`, and `-`. After the build, it opens the zip, reads the media mapping, and counts notes with sqlite.
+3. Tell the user how to import the file:
+   - Anki desktop: File > Import, then select the `.apkg`.
+   - AnkiConnect, when Anki is running: `importPackage` with an absolute path, then `sync`.
+
+Deck IDs, note type IDs, and note GUIDs come from hashes of the deck name, the model name, and the first field. If the user imports the same spec again, Anki updates the notes and does not add duplicates. Note types import as `Basic (claude-anki)`, `Basic (and reversed card) (claude-anki)`, and `Cloze (claude-anki)`. They do not change the user's own note types.
+
 ## Error Handling
 
 | Error | Response |
 |-------|----------|
-| Connection refused | "Anki desktop needs to be running with AnkiConnect installed." |
+| Connection refused | "Anki desktop needs to be running with AnkiConnect installed." Offer the .apkg fallback. |
 | Deck not found | "Deck 'X' doesn't exist. Create it?" |
 | Duplicate note | Report which cards were skipped, continue with the rest |
 | Model not found | List available models, ask user to pick one |
