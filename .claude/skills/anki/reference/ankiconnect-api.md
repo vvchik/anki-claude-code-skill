@@ -40,6 +40,8 @@ curl -s localhost:8765 -X POST -d '{"action":"sync","version":6}'
 ```
 Returns: `{"result": null, "error": null}`
 
+If the error is `sync: auth not configured`, Anki has no saved AnkiWeb login. Ask the user to click Sync in Anki desktop once and log in, then retry.
+
 ---
 
 ## Package Operations
