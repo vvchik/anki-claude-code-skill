@@ -123,7 +123,7 @@ Returns: `{"result": ["Front", "Back"], "error": null}`
 **Common field names by model:**
 - `Basic`: Front, Back
 - `Basic (and reversed card)`: Front, Back
-- `Cloze`: Text, Extra
+- `Cloze`: Text, Back Extra
 
 ### modelNamesAndIds
 List note types with their IDs.
@@ -180,7 +180,7 @@ curl -s localhost:8765 -X POST -d '{
       "modelName": "Cloze",
       "fields": {
         "Text": "In Python, {{c1::list comprehensions}} provide a concise way to create lists from iterables",
-        "Extra": "Example: [x**2 for x in range(10)]"
+        "Back Extra": "Example: [x**2 for x in range(10)]"
       },
       "tags": ["python", "syntax"]
     }
