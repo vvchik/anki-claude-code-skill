@@ -94,7 +94,7 @@ Same as Basic — Anki auto-generates the reverse card.
 ```html
 {{cloze:Text}}
 <br>
-{{Extra}}
+{{Back Extra}}
 ```
 
 ## Formatting Card Content
