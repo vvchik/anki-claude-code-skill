@@ -34,9 +34,35 @@ curl -s localhost:8765 -X POST -d '{"action":"version","version":6}'
 Returns: `{"result": 6, "error": null}`
 
 ### sync
-Trigger AnkiWeb sync.
+Trigger AnkiWeb sync. Anki must be logged in to AnkiWeb.
 ```bash
 curl -s localhost:8765 -X POST -d '{"action":"sync","version":6}'
+```
+Returns: `{"result": null, "error": null}`
+
+---
+
+## Package Operations
+
+### importPackage
+Import an `.apkg` file. The path must be absolute and readable by the Anki process.
+```bash
+curl -s localhost:8765 -X POST -d '{
+  "action": "importPackage",
+  "version": 6,
+  "params": {"path": "/absolute/path/to/cards.apkg"}
+}'
+```
+Returns: `{"result": true, "error": null}`
+
+### exportPackage
+Export a deck to an `.apkg` file.
+```bash
+curl -s localhost:8765 -X POST -d '{
+  "action": "exportPackage",
+  "version": 6,
+  "params": {"deck": "Python::Basics", "path": "/absolute/path/to/out.apkg", "includeSched": false}
+}'
 ```
 
 ---
@@ -436,6 +462,18 @@ curl -s localhost:8765 -X POST -d '{
   "params": {"filename": "diagram.png"}
 }'
 ```
+Returns: base64 string, or `false` if the file is not in the collection.
+
+### getMediaFilesNames
+List media filenames that match a glob pattern.
+```bash
+curl -s localhost:8765 -X POST -d '{
+  "action": "getMediaFilesNames",
+  "version": 6,
+  "params": {"pattern": "python-*"}
+}'
+```
+Returns: `{"result": ["python-bst-diagram.png"], "error": null}`
 
 ### deleteMediaFile
 Remove a media file.
